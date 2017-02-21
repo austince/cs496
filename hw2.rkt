@@ -40,7 +40,7 @@
     (lambda (tree)
         (cases dTree tree
                (leaf-t (val) 0)
-               (node (k l r) (max (+ (dTree-height l) 1) (+ (dTree-height r) 1))
+               (node (k l r) (max (+ 1 (dTree-height l)) (+ 1 (dTree-height r)))
                ))
     ))
 
@@ -49,7 +49,7 @@
     (lambda (tree)
         (cases dTree tree
                (leaf-t (val) 1)
-               (node (k l r) (+ (+ (dTree-size l) (dTree-size r)) 1))
+               (node (k l r) (+ 1 (+ (dTree-size l) (dTree-size r))))
                ))
     )
 
@@ -68,7 +68,6 @@
 ; dTree -> [[num]]
 (define dTree-paths
     (lambda (tree) (dTree-paths-helper tree '())))
-
 
 ; TODO --> why does this work? luck?
 ; { dTree, num } -> num|bool
@@ -103,6 +102,7 @@
                ))
     )
 
+; { dTree, dTree } -> bool
 (define dTree-eq?
     (lambda (t1 t2)
         (cases dTree t1
@@ -122,7 +122,6 @@
         )
     )
 
-
 ; @type graphEncoding(n) : Pair(List<symbol>(n), List<Pair(List<num>(n), num)>(P(n)))
 ; where P(n) is the powerset of n
 
@@ -130,8 +129,8 @@
 ; { graphEncoding(n), num } -> graphEncoding(n-1)
 (define (stripGraph graph dec)
     (match graph
-           ['() '()]
-           [(cons h t) (cons
+           ['() '()] ; Should never get here
+           [(cons h t) (cons ; Construct a new graphEncoding pair
                            (cdr h) ; the remaining symbols
                            ;; Could also be accomplished with a fold
                            (map (lambda (x) (cons (cdr (car x)) (cdr x)))
@@ -146,14 +145,14 @@
     (lambda (t fGraph)
         (cases dTree t
                ; in the form '(() (() . num))
-               (leaf-t (val) (leaf-t (cdr (car (cdr fGraph)))))
+               (leaf-t (val) (leaf-t (cdr (cadr fGraph))))
                (node (k l r) (node k
                                    (replaceLeafAt l (stripGraph fGraph 0))
                                    (replaceLeafAt r (stripGraph fGraph 1))))
                ))
     )
 
-; graphEncoding -> dTree
+; graphEncoding( -> dTree
 (define (bf->dTree fGraph)
         (replaceLeafAt (list->tree (car fGraph)) fGraph))
 
@@ -194,6 +193,7 @@
 (define xyzTree (list->tree '(x y z)))
 
 (define symbol-upcase (compose string->symbol (compose string-upcase symbol->string)))
+
 (define (succ val) (+ 1 val))
 
 (provide (all-defined-out))
