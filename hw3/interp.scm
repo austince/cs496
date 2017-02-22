@@ -1,98 +1,169 @@
 (module interp (lib "eopl.ss" "eopl")
-  
-  ;; interpreter for the LET language.  The \commentboxes are the
-  ;; latex code for inserting the rules into the code in the book.
-  ;; These are too complicated to put here, see the text, sorry.
 
-  (require "drscheme-init.scm")
+        ;; interpreter for the LET language.  The \commentboxes are the
+        ;; latex code for inserting the rules into the code in the book.
+        ;; These are too complicated to put here, see the text, sorry.
 
-  (require "lang.scm")
-  (require "data-structures.scm")
-  (require "environments.scm")
+        (require "drscheme-init.scm")
 
-  (provide value-of-program value-of)
+        (require "lang.scm")
+        (require "data-structures.scm")
+        (require "environments.scm")
 
-;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
+        (provide value-of-program value-of)
 
-  ;; value-of-program : Program -> ExpVal
-  ;; Page: 71
-  (define value-of-program 
-    (lambda (pgm)
-      (cases program pgm
-        (a-program (exp1)
-          (value-of exp1 (init-env))))))
+        ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
-  ;; value-of : Exp * Env -> ExpVal
-  ;; Page: 71
-  (define value-of
-    (lambda (exp env)
-      (cases expression exp
+        ;; value-of-program : Program -> ExpVal
+        ;; Page: 71
+        (define value-of-program
+            (lambda (pgm)
+                (cases program pgm
+                       (a-program (exp1)
+                                  (value-of exp1 (init-env))))))
 
-        ;\commentbox{ (value-of (const-exp \n{}) \r) = \n{}}
-        (const-exp (num) (num-val num))
+        ;; value-of : Exp * Env -> ExpVal
+        ;; Page: 71
+        (define value-of
+            (lambda (exp env)
+                (cases expression exp
 
-        ;\commentbox{ (value-of (var-exp \x{}) \r) = (apply-env \r \x{})}
-        (var-exp (var) (apply-env env var))
+                       ;\commentbox{ (value-of (const-exp \n{}) \r) = \n{}}
+                       (const-exp (num) (num-val num))
 
-        ;\commentbox{\diffspec}
-        (diff-exp (exp1 exp2)
-          (let ((val1 (value-of exp1 env))
-                (val2 (value-of exp2 env)))
-            (let ((num1 (expval->num val1))
-                  (num2 (expval->num val2)))
-              (num-val
-                (- num1 num2)))))
+                       ;\commentbox{ (value-of (var-exp \x{}) \r) = (apply-env \r \x{})}
+                       (var-exp (var) (apply-env env var))
 
-        ;\commentbox{\zerotestspec}
-        (zero?-exp (exp1)
-          (let ((val1 (value-of exp1 env)))
-            (let ((num1 (expval->num val1)))
-              (if (zero? num1)
-                (bool-val #t)
-                (bool-val #f)))))
-              
-        ;\commentbox{\ma{\theifspec}}
-        (if-exp (exp1 exp2 exp3)
-          (let ((val1 (value-of exp1 env)))
-            (if (expval->bool val1)
-              (value-of exp2 env)
-              (value-of exp3 env))))
+                       ;\commentbox{\diffspec}
+                       (diff-exp (exp1 exp2)
+                                 (let ((val1 (value-of exp1 env))
+                                       (val2 (value-of exp2 env)))
+                                     (let ((num1 (expval->num val1))
+                                           (num2 (expval->num val2)))
+                                         (num-val
+                                             (- num1 num2)))))
 
-        ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (var exp1 body)       
-          (let ((val1 (value-of exp1 env)))
-            (value-of body
-              (extend-env var val1 env))))
+                       ;\commentbox{\zerotestspec}
+                       (zero?-exp (exp1)
+                                  (let ((val1 (value-of exp1 env)))
+                                      (let ((num1 (expval->num val1)))
+                                          (if (zero? num1)
+                                              (bool-val #t)
+                                              (bool-val #f)))))
 
-        ;; Extensions follow
-        (minus-exp (exp1)
-                       (write "implement me!"))
+                       ;\commentbox{\ma{\theifspec}}
+                       (if-exp (exp1 exp2 exp3)
+                               (let ((val1 (value-of exp1 env)))
+                                   (if (expval->bool val1)
+                                       (value-of exp2 env)
+                                       (value-of exp3 env))))
 
-        (add-exp (exp1 exp2)
-                       (write "implement me!"))
+                       ;\commentbox{\ma{\theletspecsplit}}
+                       (let-exp (var exp1 body)
+                                (let ((val1 (value-of exp1 env)))
+                                    (value-of body
+                                              (extend-env var val1 env))))
 
-        (mult-exp (exp1 exp2)
-                       (write "implement me!"))
+                       ;; Extensions follow
+                       (minus-exp (exp1)
+                                  ;; Get the Value from the expression
+                                  (let ((val1 (value-of exp1 env)))
+                                      ;; Convert it to a number
+                                      (let ((num (expval->num val1)))
+                                          ;; Construct a num-val with the negative number
+                                          (num-val (- num))
+                                          )
+                                      )
+                                  )
 
-        (div-exp (exp1 exp2)
-                       (write "implement me!"))
+                       (add-exp (exp1 exp2)
+                                ;; Get the exp values
+                                (let ((val1 (value-of exp1 env))
+                                      (val2 (value-of exp2 env)))
+                                    ;; Convert them to nums
+                                    (let ((num1 (expval->num val1))
+                                          (num2 (expval->num val2)))
+                                        ;; Construct a num-val with the sum
+                                        (num-val (+ num1 num2))
+                                        )
+                                    )
+                                )
 
-        (cons-exp (exp1 exp2)
-                       (write "implement me!"))
+                       (mult-exp (exp1 exp2)
+                                 ;; Get the exp values
+                                 (let ((val1 (value-of exp1 env))
+                                       (val2 (value-of exp2 env)))
+                                     ;; Convert them to nums
+                                     (let ((num1 (expval->num val1))
+                                           (num2 (expval->num val2)))
+                                         ;; Construct a num-val with the product
+                                         (num-val (* num1 num2))
+                                         )
+                                     )
+                                 )
 
-        (car-exp (e1)
-                       (write "implement me!"))
+                       (div-exp (exp1 exp2)
+                                ;; Get the exp values
+                                (let ((val1 (value-of exp1 env))
+                                      (val2 (value-of exp2 env)))
+                                    ;; Convert them to nums
+                                    (let ((num1 (expval->num val1))
+                                          (num2 (expval->num val2)))
+                                        ;; Construct a num-val with the quotient
+                                        (num-val (/ num1 num2))
+                                        )
+                                    )
+                                )
 
-        (cdr-exp (e1)
-                       (write "implement me!"))
-                 
-        (null-exp (exp1)
-                       (write "implement me!"))
-      
-        (emptylist-exp ()
-                       (write "implement me!"))
+                       (cons-exp (exp1 exp2)
+                                 ;; Get the exp values
+                                 (let ((val1 (value-of exp1 env))
+                                       (val2 (value-of exp2 env)))
 
-))))       
+                                     (let ((ls (expval->list val2)))
+                                         (list-val (cons val1 ls))
+                                         )
+                                     )
+                                 )
+
+                       (car-exp (exp1)
+                                ;; Get the Value from the expression
+                                (let ((val1 (value-of exp1 env)))
+                                    ;; Convert it to a list
+                                    (let ((listVal (expval->list val1)))
+                                        ;; Spit back the car
+                                        (car listVal)
+                                        )
+                                    )
+                                )
+
+                       (cdr-exp (exp1)
+                                ;; Get the Value from the expression
+                                (let ((val1 (value-of exp1 env)))
+                                    ;; Convert it to a list
+                                    (let ((listVal (expval->list val1)))
+                                        ;; Construct a list-val with the cdr, in case of '()
+                                        (list-val (cdr listVal))
+                                        )
+                                    )
+                                )
+
+                       (null-exp (exp1)
+                                 ;; Get the Value from the expression
+                                 (let ((val1 (value-of exp1 env)))
+                                     ;; Check if its a list of expvals
+                                     (cases expval val1
+                                            (bool-val (bool) (bool-val #f))
+                                            (num-val (num) (bool-val #f))
+                                            (list-val (listVal) (bool-val (null? listVal)))
+                                            )
+                                     )
+                                 )
+
+                       (emptylist-exp ()
+                                      (list-val '()))
+
+                       ))))
   
  
       
