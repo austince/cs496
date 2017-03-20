@@ -1,7 +1,6 @@
 (module tests mzscheme
   
   (provide test-list)
-
   ;;;;;;;;;;;;;;;; tests ;;;;;;;;;;;;;;;;
   
   (define test-list
@@ -85,25 +84,80 @@ in let times4 = (fix t4m)
  in letrec f(x) = if zero?(x) then 0 else -((f -(x,1)), m) in (f 4)"
         20)
       
-;; alas, no multiplication in this language.  Exercise: define
-;; multiplication as a letrec and then use it to define factorial.
-;;      (fact-of-6  "letrec
-;;  fact(x) = if zero?(x) then 1 else *(x, (fact sub1(x)))
-;;  in (fact 6)" 
-;;                  720)
+;      (fact-of-6  "letrec
+;  fact(x) = if zero?(x) then 1 else *(x, (fact sub1(x)))
+;in (fact 6)" 
+;                  720)
       
       (HO-nested-letrecs
 "letrec even(odd)  = proc(x) if zero?(x) then 1 else (odd -(x,1))
    in letrec  odd(x)  = if zero?(x) then 0 else ((even odd) -(x,1))
    in (odd 13)" 1)
 
-      (mutually-recursive-letrecs "
-let x = 0
-in letrec even(x) = if zero?(x) then 1 
-                                  else (odd -(x,1))
-          odd(x)  = if zero?(x) then 0 
-                                  else (even -(x,1))
-   in (odd 99)" 1)
+      
+      (begin-test-1
+        "begin 1; 2; 3 end"
+        3)
+
+      (gensym-test-1 
+"let g = let counter = newref(0) 
+         in proc (dummy) let d = setref(counter, -(deref(counter),-1))
+                    in deref(counter)
+in -((g 11),(g 22))"
+       -1)
+
+      (simple-store-test-1 "let x = newref(17) in deref(x)" 17)
+
+      (assignment-test-1 "let x = newref(17) 
+                          in begin setref(x,27); deref(x) end"
+        27)
+
+      (gensym-test-2 
+"let g = let counter = newref(0) 
+         in proc (dummy) begin
+                           setref(counter, -(deref(counter),-1));
+                           deref(counter)
+                         end
+ in -((g 11),(g 22))"
+       -1)
+
+     (even-odd-via-set-1 "
+let x = newref(0)
+in letrec even(d) = if zero?(deref(x)) 
+                   then 1
+                   else let d = setref(x, -(deref(x),1))
+                        in (odd d)
+          odd(d)  = if zero?(deref(x)) 
+                   then 0
+                   else let d = setref(x, -(deref(x),1))
+                        in (even d)
+   in let d = setref(x,13) in (odd -100)" 1)
+
+ (even-odd-via-set-1 "
+let x = newref(0)
+in letrec even(d) = if zero?(deref(x)) 
+                   then 1
+                   else let d = setref(x, -(deref(x),1))
+                        in (odd d)
+          odd(d)  = if zero?(deref(x)) 
+                   then 0
+                   else let d = setref(x, -(deref(x),1))
+                        in (even d)
+   in let d = setref(x,13) in (odd -100)" 1)
+
+ (show-allocation-1 "
+let x = newref(22)
+in let f = proc (z) let zz = newref(-(z,deref(x))) in deref(zz)
+   in -((f 66), (f 55))"
+   11)
+
+ (chains-1 "
+let x = newref(newref(0))
+in begin 
+    setref(deref(x), 11);
+    deref(deref(x))
+   end"
+   11)
       
       ))
   )

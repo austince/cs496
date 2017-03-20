@@ -1,7 +1,7 @@
 (module lang (lib "eopl.ss" "eopl")                
 
-  ;; grammar for the LETREC language
-
+  ;; language for EXPLICIT-REFS
+  
   (require "drscheme-init.scm")
   
   (provide (all-defined-out))
@@ -23,24 +23,12 @@
 
       (expression (number) const-exp)
       (expression
-       ("-" "(" expression "," expression ")")
-       diff-exp)
-      
-      (expression
-       ("+" "(" expression "," expression ")")
-       add-exp)
-
-      (expression
-       ("*" "(" expression "," expression ")")
-       mult-exp)
+        ("-" "(" expression "," expression ")")
+        diff-exp)
       
       (expression
        ("zero?" "(" expression ")")
        zero?-exp)
-
-      (expression
-       ("showenv")
-       showenv-exp)
 
       (expression
        ("if" expression "then" expression "else" expression)
@@ -66,8 +54,26 @@
            "in" expression)
         letrec-exp)
       
+      ;; new for explicit-refs
+
+      (expression
+        ("begin" expression (arbno ";" expression) "end")
+        begin-exp)
+
+      (expression
+        ("newref" "(" expression ")")
+        newref-exp)
+
+      (expression
+        ("deref" "(" expression ")")
+        deref-exp)
+
+      (expression
+        ("setref" "(" expression "," expression ")")
+        setref-exp)
+
       ))
-  
+
   ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;
   
   (sllgen:make-define-datatypes the-lexical-spec the-grammar)

@@ -2,3 +2,5 @@
 **/compiled/
 **/*.*~
 *.zip
+# Buffer files
+*\#*\#*\#
