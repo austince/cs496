@@ -16,11 +16,11 @@
             (lambda ()
                 (extend-env
                     (list 'i) (list (num-val 1))
-                (extend-env
-                    (list 'v) (list (num-val 5))
-                          (extend-env
-                              (list 'x) (list (num-val 10))
-                              (empty-env))))))
+                    (extend-env
+                        (list 'v) (list (num-val 5))
+                        (extend-env
+                            (list 'x) (list (num-val 10))
+                            (empty-env))))))
 
         ;;;;;;;;;;;;;;;; environment constructors and observers ;;;;;;;;;;;;;;;;
 
@@ -45,20 +45,21 @@
                                                             (list-ref b-vars n)
                                                             (list-ref p-bodies n)
                                                             env))))
+                                            ; Keep recursing
                                             (else (apply-env saved-env search-syms)))))))
 
-        ;; location : Sym * Listof(Sym) -> Maybe(Int)
+        ;; location : Listof(Sym) * Listof(Listof(Sym)) -> Maybe(Int)
         ;; (location sym syms) returns the location of sym in syms or #f is
         ;; sym is not in syms.  We can specify this as follows:
         ;; if (memv sym syms)
         ;;   then (list-ref syms (location sym syms)) = sym
         ;;   else (location sym syms) = #f
         (define location
-            (lambda (sym syms)
+            (lambda (syms allSyms)
                 (cond
-                    ((null? syms) #f)
-                    ((eqv? sym (car syms)) 0)
-                    ((location sym (cdr syms))
+                    ((null? allSyms) #f)
+                    ((equal? syms (car allSyms)) 0)
+                    ((location syms (cdr allSyms))
                      => (lambda (n)
                             (+ n 1)))
                     (else #f))))
