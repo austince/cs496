@@ -1,90 +1,93 @@
-(module lang (lib "eopl.ss" "eopl")                
+(module lang (lib "eopl.ss" "eopl")
 
-  ;; language for EXPLICIT-REFS
-  
-  (require "drscheme-init.scm")
-  
-  (provide (all-defined-out))
+        ;; language for EXPLICIT-REFS
 
-  ;;;;;;;;;;;;;;;; grammatical specification ;;;;;;;;;;;;;;;;
-  
-  (define the-lexical-spec
-    '((whitespace (whitespace) skip)
-      (comment ("%" (arbno (not #\newline))) skip)
-      (identifier
-       (letter (arbno (or letter digit "_" "-" "?")))
-       symbol)
-      (number (digit (arbno digit)) number)
-      (number ("-" digit (arbno digit)) number)
-      ))
-  
-  (define the-grammar
-    '((program (expression) a-program)
+        (require "drscheme-init.scm")
 
-      (expression (number) const-exp)
-      (expression
-        ("-" "(" expression "," expression ")")
-        diff-exp)
-      
-      (expression
-       ("zero?" "(" expression ")")
-       zero?-exp)
+        (provide (all-defined-out))
 
-      (expression
-       ("if" expression "then" expression "else" expression)
-       if-exp)
+        ;;;;;;;;;;;;;;;; grammatical specification ;;;;;;;;;;;;;;;;
 
-      (expression (identifier) var-exp)
+        (define the-lexical-spec
+            '((whitespace (whitespace) skip)
+              (comment ("%" (arbno (not #\newline))) skip)
+              (identifier
+                  (letter (arbno (or letter digit "_" "-" "?")))
+                  symbol)
+              (number (digit (arbno digit)) number)
+              (number ("-" digit (arbno digit)) number)
+            ))
 
-      (expression
-       ("let" identifier "=" expression "in" expression)
-       let-exp)   
+        (define the-grammar
+            '((program (expression) a-program)
 
-      (expression
-       ("proc" "(" (separated-list identifier ",") ")" expression)
-       proc-exp)
+              (expression (number) const-exp)
+              (expression
+                  ("-" "(" expression "," expression ")")
+                  diff-exp)
 
-      (expression
-       ("(" expression (arbno expression) ")")
-       call-exp)
+              (expression
+                  ("zero?" "(" expression ")")
+                  zero?-exp)
 
-      (expression
-        ("letrec"
-          (arbno identifier "(" identifier ")" "=" expression)
-           "in" expression)
-        letrec-exp)
-      
-      ;; new for explicit-refs
+              (expression
+                  ("if" expression "then" expression "else" expression)
+                  if-exp)
 
-      (expression
-        ("begin" expression (arbno ";" expression) "end")
-        begin-exp)
+              (expression (identifier) var-exp)
 
-      (expression
-        ("newref" "(" expression ")")
-        newref-exp)
+              (expression
+                  ("let" identifier "=" expression "in" expression)
+                  let-exp)
 
-      (expression
-        ("deref" "(" expression ")")
-        deref-exp)
+              (expression
+                  ("proc" "(" (separated-list identifier ",") ")" expression)
+                  proc-exp)
 
-      (expression
-        ("setref" "(" expression "," expression ")")
-        setref-exp)
+              (expression
+                  ("(" expression (arbno expression) ")")
+                  call-exp)
 
-      ))
+              (expression
+                  ("letrec"
+                   (arbno identifier "(" identifier ")" "=" expression)
+                   "in" expression)
+                  letrec-exp)
 
-  ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;
-  
-  (sllgen:make-define-datatypes the-lexical-spec the-grammar)
-  
-  (define show-the-datatypes
-    (lambda () (sllgen:list-define-datatypes the-lexical-spec the-grammar)))
-  
-  (define scan&parse
-    (sllgen:make-string-parser the-lexical-spec the-grammar))
-  
-  (define just-scan
-    (sllgen:make-string-scanner the-lexical-spec the-grammar))
-  
-  )
+              ;; new for explicit-refs
+
+              (expression
+                  ("begin" expression (arbno ";" expression) "end")
+                  begin-exp)
+
+              (expression
+                  ("newref" "(" expression ")")
+                  newref-exp)
+
+              (expression
+                  ("deref" "(" expression ")")
+                  deref-exp)
+
+              (expression
+                  ("setref" "(" expression "," expression ")")
+                  setref-exp)
+
+              (expression
+                  ("for" identifier "=" expression "to" expression "(" expression ")")
+                  for-exp)
+            ))
+
+        ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;
+
+        (sllgen:make-define-datatypes the-lexical-spec the-grammar)
+
+        (define show-the-datatypes
+            (lambda () (sllgen:list-define-datatypes the-lexical-spec the-grammar)))
+
+        (define scan&parse
+            (sllgen:make-string-parser the-lexical-spec the-grammar))
+
+        (define just-scan
+            (sllgen:make-string-scanner the-lexical-spec the-grammar))
+
+        )
