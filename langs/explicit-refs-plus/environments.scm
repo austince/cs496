@@ -15,30 +15,31 @@
         (define init-env
             (lambda ()
                 (extend-env
-                    (list 'i) (list (num-val 1))
-                    (extend-env
-                        (list 'v) (list (num-val 5))
-                        (extend-env
-                            (list 'x) (list (num-val 10))
-                            (empty-env))))))
+                    (list 'i 'v 'x)
+                    (list (num-val 1) (num-val 5) (num-val 10))
+                            (empty-env))
+                ))
 
         ;;;;;;;;;;;;;;;; environment constructors and observers ;;;;;;;;;;;;;;;;
 
         (define apply-env
-            (lambda (env search-syms)
+            (lambda (env search-sym)
+;                (write env) (newline) (write search-sym) (newline)
                 (cases environment env
                        (empty-env ()
-                                  (eopl:error 'apply-env "No binding for ~s" search-syms))
+                                  (eopl:error 'apply-env "No binding for ~s" search-sym))
 
                        (extend-env (bvars bvals saved-env)
-                                   (if (equal? search-syms bvars)
-                                       bvals
-                                       ; Keep recursing
-                                       (apply-env saved-env search-syms)))
+                                   (cond
+                                        ((location search-sym bvars)
+                                             => (lambda (n)
+                                                    (list-ref bvals n)))
+                                        ; Keep recursing
+                                        (else (apply-env saved-env search-sym))))
 
                        (extend-env-rec* (p-names b-vars p-bodies saved-env)
                                         (cond
-                                            ((location search-syms p-names)
+                                            ((location search-sym p-names)
                                              => (lambda (n)
                                                     (proc-val
                                                         (procedure
@@ -46,7 +47,7 @@
                                                             (list-ref p-bodies n)
                                                             env))))
                                             ; Keep recursing
-                                            (else (apply-env saved-env search-syms)))))))
+                                            (else (apply-env saved-env search-sym)))))))
 
         ;; location : Listof(Sym) * Listof(Listof(Sym)) -> Maybe(Int)
         ;; (location sym syms) returns the location of sym in syms or #f is
@@ -63,5 +64,4 @@
                      => (lambda (n)
                             (+ n 1)))
                     (else #f))))
-
         )
