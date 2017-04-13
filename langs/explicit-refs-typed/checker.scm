@@ -174,15 +174,66 @@
                                        ))
 
                        ;; Lists
-                       (emptylist-exp (type) type)
+                       (emptylist-exp (t) (list-type t))
 
-                       (cons-exp (exp1 exp2) (eopl:error "not implemented!"))
+                       (cons-exp (exp1 exp2)
+                                 (let ((e1Type (type-of exp1 tenv))
+                                       (e2Type (type-of exp2 tenv)))
+                                     ;; Make sure the second arg is a list
+                                     (cases type e2Type
+                                            ;; Make sure the first arg is of the list's type
+                                            (list-type (lType)
+                                                       (check-equal-type! lType e1Type exp1))
+                                            (else (eopl:error
+                                                      'cons
+                                                      "Not a list type: ~s in ~a"
+                                                      (type-to-external-form e2Type)
+                                                      exp2
+                                                      )))
+                                     ;; The result will be of the second expressions type
+                                     e2Type))
 
-                       (null?-exp (exp1) (eopl:error "not implemented!"))
+                       (null?-exp (exp1)
+                                  (let ((e1Type (type-of exp1 tenv)))
+                                      (cases type e1Type
+                                             ;; Make sure it's a list
+                                             (list-type (lType)
+                                                        ;; If it is, great!
+                                                        (bool-type))
+                                             (else (eopl:error
+                                                       'null?
+                                                       "Not a list type: ~s in ~a"
+                                                       (type-to-external-form e1Type)
+                                                       exp1
+                                                       )))))
 
-                       (car-exp (exp1) (eopl:error "not implemented!"))
+                       (car-exp (exp1)
+                                (let ((e1Type (type-of exp1 tenv)))
+                                    (cases type e1Type
+                                           ;; Make sure it's a list
+                                           (list-type (lType)
+                                                      ;; If it is, great, return its type!
+                                                      lType)
+                                           (else (eopl:error
+                                                     'null?
+                                                     "Not a list type: ~s in ~a"
+                                                     (type-to-external-form e1Type)
+                                                     exp1
+                                                     )))))
 
-                       (cdr-exp (exp1) (eopl:error "not implemented!"))
+                       (cdr-exp (exp1)
+                                (let ((e1Type (type-of exp1 tenv)))
+                                    (cases type e1Type
+                                           ;; Make sure it's a list
+                                           (list-type (lType)
+                                                      ;; If it is, great, return the list-type!
+                                                      e1Type)
+                                           (else (eopl:error
+                                                     'null?
+                                                     "Not a list type: ~s in ~a"
+                                                     (type-to-external-form e1Type)
+                                                     exp1
+                                                     )))))
                        )))
 
         (define report-rator-not-a-proc-type
