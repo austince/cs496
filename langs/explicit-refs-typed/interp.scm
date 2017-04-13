@@ -136,10 +136,17 @@
                        (eopl:error "Todo!"))
 
              (pair-exp (exp1 exp2)
-                       (eopl:error "Todo!"))
+                       (let ((val1 (value-of exp1 env))
+                             (val2 (value-of exp2 env)))
+                           (pair-val val1 val2)))
 
              (unpair-exp (id1 id2 exp1 body)
-                       (eopl:error "Todo!"))
+                         (let* ((val1 (value-of exp1 env))
+                               (fstVal (expval->fst val1))
+                               (sndVal (expval->snd val1)))
+                             (value-of body
+                                       (extend-env id2 sndVal
+                                                   (extend-env id1 fstVal env)))))
         )))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal

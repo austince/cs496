@@ -18,9 +18,26 @@
                          (proc-val
                              (proc proc?))
                          (ref-val (ref reference?))
-                         (unit-val))
+                         (unit-val)
+                         (pair-val
+                             (fst expval?)
+                             (snd expval?)))
 
                              ;;; extractors:
+
+        (define expval->fst
+            (lambda (v)
+                (cases expval v
+                       ;; First value
+                       (pair-val (e1 e2) e1)
+                       (else (expval-extractor-error 'pairFst v)))))
+
+        (define expval->snd
+            (lambda (v)
+                (cases expval v
+                       ;; Second val
+                       (pair-val (e1 e2) e2)
+                       (else (expval-extractor-error 'pairSnd v)))))
 
         (define expval->num
             (lambda (v)
