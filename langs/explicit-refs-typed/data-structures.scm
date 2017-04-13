@@ -17,11 +17,16 @@
                              (boolean boolean?))
                          (proc-val
                              (proc proc?))
+                         ;; Refs
                          (ref-val (ref reference?))
                          (unit-val)
+                         ;; Pairs
                          (pair-val
                              (fst expval?)
-                             (snd expval?)))
+                             (snd expval?))
+                         ;; Lists
+                         (list-val (l list?))
+                         )
 
                              ;;; extractors:
 

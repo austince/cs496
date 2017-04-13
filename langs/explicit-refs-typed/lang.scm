@@ -96,6 +96,27 @@
           ("unpair" "(" identifier "," identifier ")" "=" expression "in" expression)
           unpair-exp)
 
+      ;; New for lists
+      (expression
+          ("emptylist" type)
+          emptylist-exp)
+
+      (expression
+          ("cons" "(" expression "," expression ")")
+          cons-exp)
+
+      (expression
+          ("null?" "(" expression ")")
+          null?-exp)
+
+      (expression
+          ("car" "(" expression ")")
+          car-exp)
+
+      (expression
+          ("cdr" "(" expression ")")
+          cdr-exp)
+
       ;; Types
       (type
        ("int")
@@ -109,6 +130,7 @@
        ("(" type "->" type ")")
        proc-type)
 
+      ;; Refs
       (type
           ("unit")
           unit-type)
@@ -117,10 +139,15 @@
           ("ref" "(" type ")")
           ref-type)
 
+      ;; Pairs
       (type
           ("<" type "*" type ">")
           pair-type)
-      
+
+      ;; Lists
+      (type
+          ("list" "(" type ")")
+          list-type)
       ))
 
   ;;;;;;;;;;;;;;;; sllgen boilerplate ;;;;;;;;;;;;;;;;
@@ -151,6 +178,16 @@
                                           (type-to-external-form arg-type)
                                           '- >
                                           (type-to-external-form result-type))))
+
+             ;; Refs
+             (ref-type (arg-type)
+                       (string-append
+                           "ref" "("
+                           (type-to-external-form arg-type)
+                           ")"
+                           ))
+
+             ;; Pairs
              (pair-type (typeA typeB)
                         (string-append
                             "<"
@@ -159,12 +196,14 @@
                             (type-to-external-form typeB)
                             ">"
                             ))
-             (ref-type (arg-type)
-                       (string-append
-                           "ref" "("
-                           (type-to-external-form arg-type)
-                           ")"
-                           ))
+
+             ;; Lists
+             (list-type (ltype)
+                        (string-append
+                            "list" "("
+                            (type-to-external-form ltype)
+                            ")"
+                            ))
 
              )
       ))

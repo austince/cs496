@@ -119,7 +119,7 @@
 
                        (newref-exp (e)
                                    (let ((eType (type-of e tenv)))
-                                           (ref-type eType)))
+                                       (ref-type eType)))
 
                        (deref-exp (e)
                                   (let ((eType (type-of e tenv)))
@@ -135,23 +135,54 @@
                        (setref-exp (le re)
                                    (let ((leType (type-of le tenv))
                                          (reType (type-of re tenv)))
-                                               (cases type leType
-                                                      ;; Check to make sure the value being set and what it's
-                                                      ;; being set to are of the same type
-                                                      (ref-type (t)
-                                                                (check-equal-type! t reType re))
-                                                      (else (eopl:error
-                                                                'deref
-                                                                "Not a ref type: ~s in ~a"
-                                                                (type-to-external-form leType)
-                                                                le
-                                                                )))
-                                               (unit-type)))
+                                       (cases type leType
+                                              ;; Check to make sure the value being set and what it's
+                                              ;; being set to are of the same type
+                                              (ref-type (t)
+                                                        (check-equal-type! t reType re))
+                                              (else (eopl:error
+                                                        'deref
+                                                        "Not a ref type: ~s in ~a"
+                                                        (type-to-external-form leType)
+                                                        le
+                                                        )))
+                                       (unit-type)))
 
-                       (pair-exp (exp1 exp2) (eopl:error "not implemented!"))
+                       ;; Pairs
 
-                       (unpair-exp (id1 id2 exp1 body) (eopl:error "not implemented!"))
+                       (pair-exp (le re)
+                                 (let ((leType (type-of le tenv))
+                                       (reType (type-of re tenv)))
 
+                                     (pair-type leType reType)))
+
+                       (unpair-exp (id1 id2 exp body)
+                                   (let ((expType (type-of exp tenv)))
+                                       (cases type expType
+                                              (pair-type (fstType sndType)
+                                                         (type-of body
+                                                                  ;; Extend env with both vars
+                                                                  (extend-tenv id1 fstType
+                                                                               (extend-tenv id2 sndType tenv)))
+                                                         )
+                                              (else (eopl:error
+                                                        'unpair
+                                                        "Not a pair type: ~s in ~a"
+                                                        (type-to-external-form expType)
+                                                        exp
+                                                        )))
+                                       ))
+
+                       ;; Lists
+                       (emptylist-exp (type) type)
+
+                       (cons-exp (exp1 exp2) (eopl:error "not implemented!"))
+
+                       (null?-exp (exp1) (eopl:error "not implemented!"))
+
+                       (car-exp (exp1) (eopl:error "not implemented!"))
+
+                       (cdr-exp (exp1) (eopl:error "not implemented!"))
                        )))
 
         (define report-rator-not-a-proc-type

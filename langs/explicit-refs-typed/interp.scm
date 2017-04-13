@@ -131,9 +131,13 @@
                           )
                         (num-val 23))))
 
+             ;; REF UNITS
 
              (unit-exp ()
                        (eopl:error "Todo!"))
+
+
+             ;; PAIRS
 
              (pair-exp (exp1 exp2)
                        (let ((val1 (value-of exp1 env))
@@ -147,6 +151,18 @@
                              (value-of body
                                        (extend-env id2 sndVal
                                                    (extend-env id1 fstVal env)))))
+
+             ;; LISTS
+             (emptylist-exp (type) (list-val '()))
+
+             (cons-exp (exp1 exp2) (eopl:error "Todo!"))
+
+             (null?-exp (exp1) (eopl:error "Todo!"))
+
+             (car-exp (exp1) (eopl:error "Todo!"))
+
+             (cdr-exp (exp1) (eopl:error "Todo!"))
+
         )))
 
   ;; apply-procedure : Proc * ExpVal -> ExpVal
