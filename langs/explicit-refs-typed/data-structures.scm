@@ -30,6 +30,12 @@
 
                              ;;; extractors:
 
+        (define expval->list
+            (lambda (v)
+                (cases expval v
+                       (list-val (l) l)
+                       (else (expval-extractor-error 'list v)))))
+
         (define expval->fst
             (lambda (v)
                 (cases expval v

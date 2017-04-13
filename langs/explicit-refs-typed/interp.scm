@@ -1,210 +1,241 @@
 (module interp (lib "eopl.ss" "eopl")
-  
-  ;; interpreter for the EXPLICIT-REFS language
 
-  (require "drscheme-init.scm")
+        ;; interpreter for the EXPLICIT-REFS language
 
-  (require "lang.scm")
-  (require "data-structures.scm")
-  (require "environments.scm")
-  (require "store.scm")
-  
-  (provide value-of-program value-of instrument-let instrument-newref)
+        (require "drscheme-init.scm")
 
-  ;;;;;;;;;;;;;;;; switches for instrument-let ;;;;;;;;;;;;;;;;
+        (require "lang.scm")
+        (require "data-structures.scm")
+        (require "environments.scm")
+        (require "store.scm")
 
-  (define instrument-let (make-parameter #f))
+        (provide value-of-program value-of instrument-let instrument-newref)
 
-  ;; say (instrument-let #t) to turn instrumentation on.
-  ;;     (instrument-let #f) to turn it off again.
+        ;;;;;;;;;;;;;;;; switches for instrument-let ;;;;;;;;;;;;;;;;
 
-  ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
+        (define instrument-let (make-parameter #f))
 
-  ;; value-of-program : Program -> ExpVal
-  ;; Page: 110
-  (define value-of-program 
-    (lambda (pgm)
-      (initialize-store!)               ; new for explicit refs.
-      (cases program pgm
-        (a-program (exp1)
-                   (value-of exp1 (init-env))))))
+        ;; say (instrument-let #t) to turn instrumentation on.
+        ;;     (instrument-let #f) to turn it off again.
 
-  ;; value-of : Exp * Env -> ExpVal
-  ;; Page: 113
-  (define value-of
-    (lambda (exp env)
-      (cases expression exp
+        ;;;;;;;;;;;;;;;; the interpreter ;;;;;;;;;;;;;;;;
 
-        (showstore-exp () (write "Store is") (newline)
-                       (write (get-store-as-list)) (newline)
-                       (write "Env is") (newline)
-                       (write (env->list env)) (newline))
+        ;; value-of-program : Program -> ExpVal
+        ;; Page: 110
+        (define value-of-program
+            (lambda (pgm)
+                (initialize-store!) ; new for explicit refs.
+                (cases program pgm
+                       (a-program (exp1)
+                                  (value-of exp1 (init-env))))))
 
-        ;\commentbox{ (value-of (const-exp \n{}) \r) = \n{}}
-        (const-exp (num) (num-val num))
+        ;; value-of : Exp * Env -> ExpVal
+        ;; Page: 113
+        (define value-of
+            (lambda (exp env)
+                (cases expression exp
 
-        ;\commentbox{ (value-of (var-exp \x{}) \r) = (apply-env \r \x{})}
-        (var-exp (var) (apply-env env var))
+                       (showstore-exp () (write "Store is") (newline)
+                                      (write (get-store-as-list)) (newline)
+                                      (write "Env is") (newline)
+                                      (write (env->list env)) (newline))
 
-        ;\commentbox{\diffspec}
-        (diff-exp (exp1 exp2)
-                  (let ((val1 (value-of exp1 env))
-                        (val2 (value-of exp2 env)))
-                    (let ((num1 (expval->num val1))
-                          (num2 (expval->num val2)))
-                      (num-val
-                       (- num1 num2)))))
-      
-        ;\commentbox{\zerotestspec}
-        (zero?-exp (exp1)
-                   (let ((val1 (value-of exp1 env)))
-                     (let ((num1 (expval->num val1)))
-                       (if (zero? num1)
-                           (bool-val #t)
-                           (bool-val #f)))))
-              
-        ;\commentbox{\ma{\theifspec}}
-        (if-exp (exp1 exp2 exp3)
-                (let ((val1 (value-of exp1 env)))
-                  (if (expval->bool val1)
-                      (value-of exp2 env)
-                      (value-of exp3 env))))
+                       ;\commentbox{ (value-of (const-exp \n{}) \r) = \n{}}
+                       (const-exp (num) (num-val num))
 
-        ;\commentbox{\ma{\theletspecsplit}}
-        (let-exp (var exp1 body)       
-                 (let ((val1 (value-of exp1 env)))
-                   (value-of body
-                             (extend-env var val1 env))))
-        
-        (proc-exp (var type body)
-                  (proc-val (procedure var body env)))
+                       ;\commentbox{ (value-of (var-exp \x{}) \r) = (apply-env \r \x{})}
+                       (var-exp (var) (apply-env env var))
 
-        (call-exp (rator rand)
-                  (let ((proc (expval->proc (value-of rator env)))
-                        (arg (value-of rand env)))
-                    (apply-procedure proc arg)))
+                       ;\commentbox{\diffspec}
+                       (diff-exp (exp1 exp2)
+                                 (let ((val1 (value-of exp1 env))
+                                       (val2 (value-of exp2 env)))
+                                     (let ((num1 (expval->num val1))
+                                           (num2 (expval->num val2)))
+                                         (num-val
+                                             (- num1 num2)))))
 
-        (letrec-exp (reType name bVar bVarType body letrec-body)
-                    (value-of letrec-body
-                              (extend-env-rec* (list name) (list bVar) (list body) env)))
+                       ;\commentbox{\zerotestspec}
+                       (zero?-exp (exp1)
+                                  (let ((val1 (value-of exp1 env)))
+                                      (let ((num1 (expval->num val1)))
+                                          (if (zero? num1)
+                                              (bool-val #t)
+                                              (bool-val #f)))))
 
-        (begin-exp (exp1 exps)
-                   (letrec 
-                       ((value-of-begins
-                         (lambda (e1 es)
-                           (let ((v1 (value-of e1 env)))
-                             (if (null? es)
-                                 v1
-                                 (value-of-begins (car es) (cdr es)))))))
-                     (value-of-begins exp1 exps)))
+                       ;\commentbox{\ma{\theifspec}}
+                       (if-exp (exp1 exp2 exp3)
+                               (let ((val1 (value-of exp1 env)))
+                                   (if (expval->bool val1)
+                                       (value-of exp2 env)
+                                       (value-of exp3 env))))
 
-        (newref-exp (exp1)
-                    (let ((v1 (value-of exp1 env)))
-                      (ref-val (newref v1))))
+                       ;\commentbox{\ma{\theletspecsplit}}
+                       (let-exp (var exp1 body)
+                                (let ((val1 (value-of exp1 env)))
+                                    (value-of body
+                                              (extend-env var val1 env))))
 
-        (deref-exp (exp1)
-                   (let ((v1 (value-of exp1 env)))
-                     (let ((ref1 (expval->ref v1)))
-                       (deref ref1))))
+                       (proc-exp (var type body)
+                                 (proc-val (procedure var body env)))
 
-        (setref-exp (exp1 exp2)
-                    (let ((ref (expval->ref (value-of exp1 env))))
-                      (let ((v2 (value-of exp2 env)))
-                        (begin
-                          (setref! ref v2)
-                          (num-val 23)))))
+                       (call-exp (rator rand)
+                                 (let ((proc (expval->proc (value-of rator env)))
+                                       (arg (value-of rand env)))
+                                     (apply-procedure proc arg)))
 
-        (for-exp (var lbe ube exp1)
-                 (let* ((v1 (value-of lbe env))
-                        (varRef (newref v1))
-                        (env2 (extend-env var (ref-val varRef) env))
-                        (v2 (value-of ube env2)))
-                   ( if (<= (expval->num v1) (expval->num v2)) 
-                        (do ((i (expval->num v1) (+ i 1)))
-                          ((= i (+ 1 (expval->num v2))) )   
-                          (begin (setref! varRef (num-val i))
-                                 ; (write "value of var")
-                                 ; (write (deref varRef))
-                                 ; (write (value-of exp1 env2))
-                                 (value-of exp1 env2)
-                                 )
-                          )
-                        (num-val 23))))
+                       (letrec-exp (reType name bVar bVarType body letrec-body)
+                                   (value-of letrec-body
+                                             (extend-env-rec* (list name) (list bVar) (list body) env)))
 
-             ;; REF UNITS
+                       (begin-exp (exp1 exps)
+                                  (letrec
+                                          ((value-of-begins
+                                               (lambda (e1 es)
+                                                   (let ((v1 (value-of e1 env)))
+                                                       (if (null? es)
+                                                           v1
+                                                           (value-of-begins (car es) (cdr es)))))))
+                                      (value-of-begins exp1 exps)))
 
-             (unit-exp ()
-                       (eopl:error "Todo!"))
+                       (newref-exp (exp1)
+                                   (let ((v1 (value-of exp1 env)))
+                                       (ref-val (newref v1))))
 
+                       (deref-exp (exp1)
+                                  (let ((v1 (value-of exp1 env)))
+                                      (let ((ref1 (expval->ref v1)))
+                                          (deref ref1))))
 
-             ;; PAIRS
+                       (setref-exp (exp1 exp2)
+                                   (let ((ref (expval->ref (value-of exp1 env))))
+                                       (let ((v2 (value-of exp2 env)))
+                                           (begin
+                                               (setref! ref v2)
+                                               (num-val 23)))))
 
-             (pair-exp (exp1 exp2)
-                       (let ((val1 (value-of exp1 env))
-                             (val2 (value-of exp2 env)))
-                           (pair-val val1 val2)))
+                       (for-exp (var lbe ube exp1)
+                                (let* ((v1 (value-of lbe env))
+                                       (varRef (newref v1))
+                                       (env2 (extend-env var (ref-val varRef) env))
+                                       (v2 (value-of ube env2)))
+                                    (if (<= (expval->num v1) (expval->num v2))
+                                        (do ((i (expval->num v1) (+ i 1)))
+                                            ((= i (+ 1 (expval->num v2))))
+                                            (begin (setref! varRef (num-val i))
+                                                   ; (write "value of var")
+                                                   ; (write (deref varRef))
+                                                   ; (write (value-of exp1 env2))
+                                                   (value-of exp1 env2)
+                                                   )
+                                            )
+                                        (num-val 23))))
 
-             (unpair-exp (id1 id2 exp1 body)
-                         (let* ((val1 (value-of exp1 env))
-                               (fstVal (expval->fst val1))
-                               (sndVal (expval->snd val1)))
-                             (value-of body
-                                       (extend-env id2 sndVal
-                                                   (extend-env id1 fstVal env)))))
+                       ;; REF UNITS
 
-             ;; LISTS
-             (emptylist-exp (type) (list-val '()))
-
-             (cons-exp (exp1 exp2) (eopl:error "Todo!"))
-
-             (null?-exp (exp1) (eopl:error "Todo!"))
-
-             (car-exp (exp1) (eopl:error "Todo!"))
-
-             (cdr-exp (exp1) (eopl:error "Todo!"))
-
-        )))
-
-  ;; apply-procedure : Proc * ExpVal -> ExpVal
-  ;; 
-  ;; uninstrumented version
-  ;;   (define apply-procedure
-  ;;    (lambda (proc1 arg)
-  ;;      (cases proc proc1
-  ;;        (procedure (bvar body saved-env)
-  ;;          (value-of body (extend-env bvar arg saved-env))))))
-
-  ;; instrumented version
-  (define apply-procedure
-    (lambda (proc1 arg)
-      (cases proc proc1
-        (procedure (var body saved-env)
-                   (let ((r arg))
-                     (let ((new-env (extend-env var r saved-env)))
-                       (when (instrument-let)
-                         (begin
-                           (eopl:printf
-                            "entering body of proc ~s with env =~%"
-                            var)
-                           (pretty-print (env->list new-env))
-                           (eopl:printf "store =~%")
-                           (pretty-print (store->readable (get-store-as-list)))
-                           (eopl:printf "~%")))
-                       (value-of body new-env)))))))
+                       (unit-exp () (unit-val))
 
 
-  ;; store->readable : Listof(List(Ref,Expval)) 
-  ;;                    -> Listof(List(Ref,Something-Readable))
-  (define store->readable
-    (lambda (l)
-      (map
-       (lambda (p)
-         (cons
-          (car p)
-          (expval->printable (cadr p))))
-       l)))
- 
-  )
+                       ;; PAIRS
+
+                       (pair-exp (exp1 exp2)
+                                 (let ((val1 (value-of exp1 env))
+                                       (val2 (value-of exp2 env)))
+                                     (pair-val val1 val2)))
+
+                       (unpair-exp (id1 id2 exp1 body)
+                                   (let* ((val1 (value-of exp1 env))
+                                          (fstVal (expval->fst val1))
+                                          (sndVal (expval->snd val1)))
+                                       (value-of body
+                                                 (extend-env id2 sndVal
+                                                             (extend-env id1 fstVal env)))))
+
+                       ;; LISTS
+                       (emptylist-exp (type) (list-val '()))
+
+                       (cons-exp (exp1 exp2)
+                                 (let* ((val1 (value-of exp1 env))
+                                        (val2 (value-of exp2 env))
+                                        (val2List (expval->list val2))
+                                       )
+                                     ;; Simple list construction
+                                     (list-val (cons val1 val2List))
+                                     ))
+
+                       (null?-exp (exp1)
+                                  (let* ((val1 (value-of exp1 env))
+                                         (val1List (expval->list val1))
+                                        )
+                                      (bool-val (null? val1List))
+                                      ))
+
+                       (car-exp (exp1)
+                                (let* ((val1 (value-of exp1 env))
+                                       (val1List (expval->list val1))
+                                      )
+                                    ;; Simple list destruction
+                                    (if (null? val1List)
+                                        (eopl:error
+                                            'car
+                                            "Can't take car of empty list in ~a"
+                                            exp1)
+
+                                        (car val1List))
+                                    ))
+
+                       (cdr-exp (exp1)
+                                (let* ((val1 (value-of exp1 env))
+                                       (val1List (expval->list val1))
+                                      )
+                                    (if (null? val1List)
+                                        (list-val '())
+                                        ;; Simple list destruction
+                                        (list-val (cdr val1List)))
+                                    ))
+
+                       )))
+
+        ;; apply-procedure : Proc * ExpVal -> ExpVal
+        ;;
+        ;; uninstrumented version
+        ;;   (define apply-procedure
+        ;;    (lambda (proc1 arg)
+        ;;      (cases proc proc1
+        ;;        (procedure (bvar body saved-env)
+        ;;          (value-of body (extend-env bvar arg saved-env))))))
+
+        ;; instrumented version
+        (define apply-procedure
+            (lambda (proc1 arg)
+                (cases proc proc1
+                       (procedure (var body saved-env)
+                                  (let ((r arg))
+                                      (let ((new-env (extend-env var r saved-env)))
+                                          (when (instrument-let)
+                                              (begin
+                                                  (eopl:printf
+                                                      "entering body of proc ~s with env =~%"
+                                                      var)
+                                                  (pretty-print (env->list new-env))
+                                                  (eopl:printf "store =~%")
+                                                  (pretty-print (store->readable (get-store-as-list)))
+                                                  (eopl:printf "~%")))
+                                          (value-of body new-env)))))))
+
+
+        ;; store->readable : Listof(List(Ref,Expval))
+        ;;                    -> Listof(List(Ref,Something-Readable))
+        (define store->readable
+            (lambda (l)
+                (map
+                    (lambda (p)
+                        (cons
+                            (car p)
+                            (expval->printable (cadr p))))
+                    l)))
+
+        )
   
 
 
