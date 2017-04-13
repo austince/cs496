@@ -43,6 +43,8 @@
                        ;; \commentbox{\hastype{\tenv}{\var{}}{\tenv{}(\var{})}}
                        (var-exp (var) (apply-tenv tenv var))
 
+                       (unit-exp () (unit-type))
+
                        ;; \commentbox{\diffrule}
                        (diff-exp (exp1 exp2)
                                  (let ((ty1 (type-of exp1 tenv))
@@ -111,15 +113,40 @@
 
                        (begin-exp (e exps) (eopl:error "not implemented!"))
 
-                       (newref-exp (e) (eopl:error "not implemented!"))
-
-                       (deref-exp (e) (eopl:error "not implemented!"))
-
-                       (setref-exp (le re) (eopl:error "not implemented!"))
-
                        (for-exp (id lb up body) (eopl:error "not implemented!"))
 
-                       (unit-exp () (eopl:error "not implemented!"))
+                       ;; REFERENCES
+
+                       (newref-exp (e)
+                                   (let ((eType (type-of e tenv)))
+                                           (ref-type eType)))
+
+                       (deref-exp (e)
+                                  (let ((eType (type-of e tenv)))
+                                      (cases type eType
+                                             (ref-type (t) t)
+                                             (else (eopl:error
+                                                       'deref
+                                                       "Not a ref type: ~s in ~a"
+                                                       (type-to-external-form eType)
+                                                       e
+                                                       )))))
+
+                       (setref-exp (le re)
+                                   (let ((leType (type-of le tenv))
+                                         (reType (type-of re tenv)))
+                                               (cases type leType
+                                                      ;; Check to make sure the value being set and what it's
+                                                      ;; being set to are of the same type
+                                                      (ref-type (t)
+                                                                (check-equal-type! t reType re))
+                                                      (else (eopl:error
+                                                                'deref
+                                                                "Not a ref type: ~s in ~a"
+                                                                (type-to-external-form leType)
+                                                                le
+                                                                )))
+                                               (unit-type)))
 
                        (pair-exp (exp1 exp2) (eopl:error "not implemented!"))
 
