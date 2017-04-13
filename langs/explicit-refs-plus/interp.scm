@@ -29,6 +29,16 @@
                        (a-program (exp1)
                                   (value-of exp1 (init-env))))))
 
+        ;; range : Num * Num -> Listof(Num)
+        ;; Positive iteration of range
+        (define range
+            (lambda (start end)
+                ;                (eopl:printf "start ~s to end ~s \n" start end)
+                (if (>= start end)
+                    '()
+                    (cons start (range (+ start 1) end))))
+            )
+
         ;; value-of : Exp * Env -> ExpVal
         ;; Page: 113
         (define value-of
@@ -69,18 +79,19 @@
                        ;\commentbox{\ma{\theletspecsplit}}
                        (let-exp (var exp body)
                                 (let ((val (value-of exp env)))
-;                                    (write var) (newline)
+                                    ;                                    (write var) (newline)
                                     (value-of body
                                               ; Make into lists
                                               (extend-env (list var) (list val) env))))
 
                        (proc-exp (vars body)
+                                 ; No change needed
                                  (proc-val (procedure vars body env)))
 
                        (call-exp (rator rands)
                                  (let ((proc (expval->proc (value-of rator env)))
                                        ; args is now a list
-;                                       (args (value-of rands env))
+                                       ;                                       (args (value-of rands env))
                                        (args (map (lambda (rand) (value-of rand env)) rands))
                                       )
                                      (apply-procedure proc args)))
@@ -117,17 +128,32 @@
 
 
                        (for-exp (var expStart expEnd expBody)
-                                (write var) (newline)
-                                (write expStart) (newline)
-                                (write expEnd) (newline)
-                                (write expBody) (newline)
-;                                (let* (
-;                                          (start (value))
-;                                      )
-;                                    )
+                                ;                                (write var) (newline)
+                                ;                                (write expStart) (newline)
+                                ;                                (write expEnd) (newline)
+                                ;                                (write expBody) (newline)
+                                (let* (
+                                          (startVal (value-of expStart env))
+                                          (startNum (expval->num startVal))
+                                          (endVal (value-of expEnd env))
+                                          (endNum (expval->num endVal))
+                                          (rangeList (range startNum endNum))
+                                      )
+                                    (for-each
+                                        ; i is the current iteration value
+                                        (lambda (i)
+;                                            (begin
+;                                                (eopl:printf "iter: ~s\n" i)
+                                                (value-of expBody
+                                                          (extend-env (list var) (list (num-val i)) env)
+                                                          )
+;                                                )
 
-                                (eopl:error "TODO"))
-
+                                            )
+                                        rangeList
+                                        )
+                                    )
+                                )
                        )))
 
         ;; apply-procedure : Proc * ExpVal -> ExpVal

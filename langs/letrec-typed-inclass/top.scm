@@ -1,24 +1,21 @@
-; I pledge my honor that I have abided by the Stevens Honor System
-; Austin Cawley-Edwards
-
 (module top (lib "eopl.ss" "eopl")
   
   ;; top level module.  Loads all required pieces.
   ;; Run the test suite with (run-all).
 
   (require "drscheme-init.scm")
+
   (require "data-structures.scm")  ; for expval constructors
   (require "lang.scm")             ; for scan&parse
+  (require "checker.scm")          ; for type-of-program
   (require "interp.scm")           ; for value-of-program
-  (require "tests.scm")            ; for test-list
-  (require "environments.scm")     ; for testing env
+  (require "tests.scm")            ; for tests-for-run
   
-  (provide run run-all)
+  (provide run run-all check check-all)
   
    ;;; interface for book test ;;;
   (provide test-all)
-  (define (test-all) 
-    (run-all))
+  (define (test-all) (check-all) (run-all))
 
   ;;;;;;;;;;;;;;;; interface to test harness ;;;;;;;;;;;;;;;;
   
@@ -30,17 +27,17 @@
   
   ;; run-all : () -> Unspecified
 
-  ;; runs all the tests in test-list, comparing the results with
+  ;; runs all the tests in tests-for-run, comparing the results with
   ;; equal-answer?  
 
   (define run-all
     (lambda ()
-      (run-tests! run equal-answer? test-list)))
+      (run-tests! run equal-answer? tests-for-run)))
   
   (define equal-answer?
     (lambda (ans correct-ans)
       (equal? ans (sloppy->expval correct-ans))))
-  
+      
   (define sloppy->expval 
     (lambda (sloppy-val)
       (cond
@@ -57,15 +54,45 @@
   
   (define run-one
     (lambda (test-name)
-      (let ((the-test (assoc test-name test-list)))
+      (let ((the-test (assoc test-name tests-for-run)))
         (cond
-          ((assoc test-name test-list)
+          ((assoc test-name tests-for-run)
            => (lambda (test)
                 (run (cadr test))))
           (else (eopl:error 'run-one "no such test: ~s" test-name))))))
  
   ;; (run-all)
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;; check : string -> external-type
+
+  (define check
+    (lambda (string)
+      (type-to-external-form
+        (type-of-program (scan&parse string)))))
   
+  ;; check-all : () -> unspecified
+  ;; checks all the tests in tests-for-run, comparing the results with
+  ;; equal-answer?  
+
+  (define check-all
+    (lambda ()
+      (run-tests! check equal? tests-for-check)))
+
+  ;; check-one : symbol -> expval
+  ;; (check-one sym) checks the test whose name is sym
+  
+  (define check-one
+    (lambda (test-name)
+      (let ((the-test (assoc test-name tests-for-check)))
+        (cond
+          (the-test
+           => (lambda (test)
+                (check (cadr test))))
+          (else (eopl:error 'check-one "no such test: ~s" test-name))))))
+ 
+  ;; (check-all)
   )
 
 
