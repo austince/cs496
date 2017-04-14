@@ -1,99 +1,102 @@
 (module top (lib "eopl.ss" "eopl")
-  
-  ;; top level module.  Loads all required pieces.
-  ;; Run the test suite with (run-all).
 
-  (require "drscheme-init.scm")
+        ;; Austin Cawley-Edwards
+        ;; I pledge my honor that I have abided by the Stevens Honor System.
 
-  (require "data-structures.scm")  ; for expval constructors
-  (require "lang.scm")             ; for scan&parse
-  (require "checker.scm")          ; for type-of-program
-  (require "interp.scm")           ; for value-of-program
-  (require "tests.scm")            ; for tests-for-run
-  
-  (provide run run-all check check-all)
-  
-   ;;; interface for book test ;;;
-  (provide test-all)
-  (define (test-all) (check-all) (run-all))
+        ;; top level module.  Loads all required pieces.
+        ;; Run the test suite with (run-all).
 
-  ;;;;;;;;;;;;;;;; interface to test harness ;;;;;;;;;;;;;;;;
-  
-  ;; run : String -> ExpVal
+        (require "drscheme-init.scm")
 
-  (define run
-    (lambda (string)
-      (value-of-program (scan&parse string))))
-  
-  ;; run-all : () -> Unspecified
+        (require "data-structures.scm") ; for expval constructors
+        (require "lang.scm") ; for scan&parse
+        (require "checker.scm") ; for type-of-program
+        (require "interp.scm") ; for value-of-program
+        (require "tests.scm") ; for tests-for-run
 
-  ;; runs all the tests in tests-for-run, comparing the results with
-  ;; equal-answer?  
+        (provide run run-all check check-all)
 
-  (define run-all
-    (lambda ()
-      (run-tests! run equal-answer? tests-for-run)))
-  
-  (define equal-answer?
-    (lambda (ans correct-ans)
-      (equal? ans (sloppy->expval correct-ans))))
-      
-  (define sloppy->expval 
-    (lambda (sloppy-val)
-      (cond
-        ((number? sloppy-val) (num-val sloppy-val))
-        ((boolean? sloppy-val) (bool-val sloppy-val))
-        (else
-         (eopl:error 'sloppy->expval 
-                     "Can't convert sloppy value to expval: ~s"
-                     sloppy-val)))))
-    
-  ;; run-one : Sym -> ExpVal
+        ;;; interface for book test ;;;
+        (provide test-all)
+        (define (test-all) (check-all) (run-all))
 
-  ;; (run-one sym) runs the test whose name is sym
-  
-  (define run-one
-    (lambda (test-name)
-      (let ((the-test (assoc test-name tests-for-run)))
-        (cond
-          ((assoc test-name tests-for-run)
-           => (lambda (test)
-                (run (cadr test))))
-          (else (eopl:error 'run-one "no such test: ~s" test-name))))))
- 
-  ;; (run-all)
+        ;;;;;;;;;;;;;;;; interface to test harness ;;;;;;;;;;;;;;;;
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;; run : String -> ExpVal
 
-  ;; check : string -> external-type
+        (define run
+            (lambda (string)
+                (value-of-program (scan&parse string))))
 
-  (define check
-    (lambda (string)
-      (type-to-external-form
-        (type-of-program (scan&parse string)))))
-  
-  ;; check-all : () -> unspecified
-  ;; checks all the tests in tests-for-run, comparing the results with
-  ;; equal-answer?  
+        ;; run-all : () -> Unspecified
 
-  (define check-all
-    (lambda ()
-      (run-tests! check equal? tests-for-check)))
+        ;; runs all the tests in tests-for-run, comparing the results with
+        ;; equal-answer?
 
-  ;; check-one : symbol -> expval
-  ;; (check-one sym) checks the test whose name is sym
-  
-  (define check-one
-    (lambda (test-name)
-      (let ((the-test (assoc test-name tests-for-check)))
-        (cond
-          (the-test
-           => (lambda (test)
-                (check (cadr test))))
-          (else (eopl:error 'check-one "no such test: ~s" test-name))))))
- 
-  ;; (check-all)
-  )
+        (define run-all
+            (lambda ()
+                (run-tests! run equal-answer? tests-for-run)))
+
+        (define equal-answer?
+            (lambda (ans correct-ans)
+                (equal? ans (sloppy->expval correct-ans))))
+
+        (define sloppy->expval
+            (lambda (sloppy-val)
+                (cond
+                    ((number? sloppy-val) (num-val sloppy-val))
+                    ((boolean? sloppy-val) (bool-val sloppy-val))
+                    (else
+                        (eopl:error 'sloppy->expval
+                                    "Can't convert sloppy value to expval: ~s"
+                                    sloppy-val)))))
+
+        ;; run-one : Sym -> ExpVal
+
+        ;; (run-one sym) runs the test whose name is sym
+
+        (define run-one
+            (lambda (test-name)
+                (let ((the-test (assoc test-name tests-for-run)))
+                    (cond
+                        ((assoc test-name tests-for-run)
+                         => (lambda (test)
+                                (run (cadr test))))
+                        (else (eopl:error 'run-one "no such test: ~s" test-name))))))
+
+        ;; (run-all)
+
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        ;; check : string -> external-type
+
+        (define check
+            (lambda (string)
+                (type-to-external-form
+                    (type-of-program (scan&parse string)))))
+
+        ;; check-all : () -> unspecified
+        ;; checks all the tests in tests-for-run, comparing the results with
+        ;; equal-answer?
+
+        (define check-all
+            (lambda ()
+                (run-tests! check equal? tests-for-check)))
+
+        ;; check-one : symbol -> expval
+        ;; (check-one sym) checks the test whose name is sym
+
+        (define check-one
+            (lambda (test-name)
+                (let ((the-test (assoc test-name tests-for-check)))
+                    (cond
+                        (the-test
+                            => (lambda (test)
+                                   (check (cadr test))))
+                        (else (eopl:error 'check-one "no such test: ~s" test-name))))))
+
+        ;; (check-all)
+        )
 
 
 

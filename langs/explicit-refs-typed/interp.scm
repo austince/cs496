@@ -176,6 +176,7 @@
                                       )
                                     ;; Simple list destruction
                                     (if (null? val1List)
+                                        ;; Do we need to error check or is that up to them, the users?
                                         (eopl:error
                                             'car
                                             "Can't take car of empty list in ~a"
@@ -194,6 +195,47 @@
                                         (list-val (cdr val1List)))
                                     ))
 
+
+                       ;; Trees
+
+                       ;; type -> tree(t)
+                       (emptytree-exp (t) (emptytree-val))
+
+                       ;; (exp:t tree(t) tree(t)) -> tree(t)
+                       (node-exp (valexp lstexp rstexp)
+                                 (let ((val (value-of valexp env))
+                                       (lstTree (value-of lstexp env))
+                                       (rstTree (value-of rstexp env)))
+                                     ;; Construct tha tree!
+                                     (tree-val val lstTree rstTree))
+                                 )
+
+                       ;; tree(t) -> bool
+                       (nullT?-exp (exp1)
+                                   (let ((val (value-of exp1 env)))
+                                       (bool-val (equal? val (emptytree-val)))
+                                       ))
+
+                       ;; tree(t) -> t
+                       (getData-exp (exp1)
+                                    (let* ((treeVal (value-of exp1 env))
+                                           (dataVal (expval->node-val treeVal)))
+                                        dataVal
+                                        ))
+
+                       ;; tree(t) -> tree(t)
+                       (getLST-exp (exp1)
+                                   (let* ((treeVal (value-of exp1 env))
+                                          (lstVal (expval->lst treeVal)))
+                                       lstVal
+                                       ))
+
+                       ;; tree(t) -> tree(t)
+                       (getRST-exp (exp1)
+                                   (let* ((treeVal (value-of exp1 env))
+                                          (rstVal (expval->rst treeVal)))
+                                       rstVal
+                                       ))
                        )))
 
         ;; apply-procedure : Proc * ExpVal -> ExpVal

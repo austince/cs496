@@ -234,6 +234,98 @@
                                                      (type-to-external-form e1Type)
                                                      exp1
                                                      )))))
+
+
+                       ;; TREES
+                       (emptytree-exp (t) (tree-type t))
+
+
+                       ;; Can probably be done better. Can definitely be done better.
+                       (node-exp (valexp lstexp rstexp)
+                                 (let ((valType (type-of valexp tenv))
+                                       (lstTree (type-of lstexp tenv))
+                                       (rstTree (type-of rstexp tenv))
+                                      )
+                                     ;; Make sure both subtrees are of the same type as val
+                                     (cases type lstTree
+                                            ;; Make sure the first arg is of the list's type
+                                            (tree-type (lType)
+                                                       (check-equal-type! lType valType lstexp)
+                                                       (cases type rstTree
+                                                              (tree-type (rType)
+                                                                         (check-equal-type! rType valType rstexp))
+                                                              (else (eopl:error
+                                                                        'node
+                                                                        "Not a tree type: ~s in ~a"
+                                                                        (type-to-external-form rstTree)
+                                                                        rstexp
+                                                                        )))
+                                                       )
+                                            (else (eopl:error
+                                                      'node
+                                                      "Not a tree type: ~s in ~a"
+                                                      (type-to-external-form lstTree)
+                                                      lstexp
+                                                      )))
+                                     ;; The result will be of the second expressions type
+                                     valType))
+
+                       ;; tree(t) -> bool
+                       (nullT?-exp (exp)
+                                   (let ((expType (type-of exp tenv)))
+                                       (cases type expType
+                                              ;; if it's a tree, return bool, doi
+                                              (tree-type (tType) (bool-type))
+                                              (else (eopl:error
+                                                        'nullT?
+                                                        "Not a tree type: ~s in ~a"
+                                                        (type-to-external-form expType)
+                                                        exp
+                                                        )))
+                                       ))
+
+                       ;; tree(t) -> t
+                       (getData-exp (exp)
+                                    (let ((expType (type-of exp tenv)))
+                                        (cases type expType
+                                               ;; if it's a tree, return the tree's type
+                                               (tree-type (tType) tType)
+                                               (else (eopl:error
+                                                         'getData
+                                                         "Not a tree type: ~s in ~a"
+                                                         (type-to-external-form expType)
+                                                         exp
+                                                         )))
+                                        ))
+
+                       ;; tree(t) -> tree(t)
+                       (getLST-exp (exp)
+                                   (let ((expType (type-of exp tenv)))
+                                       (cases type expType
+                                              ;; if it's a tree, return it's type
+                                              (tree-type (tType) expType)
+                                              (else (eopl:error
+                                                        'getLST
+                                                        "Not a tree type: ~s in ~a"
+                                                        (type-to-external-form expType)
+                                                        exp
+                                                        )))
+                                       ))
+
+                       ;; Same as getLST
+                       ;; tree(t) -> tree(t)
+                       (getRST-exp (exp)
+                                   (let ((expType (type-of exp tenv)))
+                                       (cases type expType
+                                              ;; if it's a tree, return it's type
+                                              (tree-type (tType) expType)
+                                              (else (eopl:error
+                                                        'getRST
+                                                        "Not a tree type: ~s in ~a"
+                                                        (type-to-external-form expType)
+                                                        exp
+                                                        )))
+                                       ))
                        )))
 
         (define report-rator-not-a-proc-type

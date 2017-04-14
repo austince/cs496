@@ -121,7 +121,7 @@
 
               (expression
                   ("emptytree" type)
-                  emptrytree-exp)
+                  emptytree-exp)
 
               (expression
                   ("node" "(" expression "," expression "," expression ")")
@@ -203,49 +203,50 @@
         (define type-to-external-form
             (lambda (ty)
                 (cases type ty
-                       (int-type () "int")
-                       (bool-type () "bool")
-                       (unit-type () "unit")
+                       (int-type () 'int)
+                       (bool-type () 'bool)
+                       (unit-type () 'unit)
                        (proc-type (arg-type result-type)
-                                  (list->string (list
-                                                    (type-to-external-form arg-type)
-                                                    '- >
-                                                    (type-to-external-form result-type))))
+                                  (list
+                                      (type-to-external-form arg-type)
+                                      '->
+                                      (type-to-external-form result-type))
+                                  )
 
                        ;; Refs
                        (ref-type (arg-type)
-                                 (string-append
-                                     "ref" "("
-                                     (type-to-external-form arg-type)
-                                     ")"
-                                     ))
+                                 (list
+                                     'ref (list
+                                              (type-to-external-form arg-type)
+                                              )
+                                     )
+                                 )
 
                        ;; Pairs
                        (pair-type (typeA typeB)
-                                  (string-append
-                                      "<"
+                                  (list
+                                      '<
                                       (type-to-external-form typeA)
-                                      "*"
+                                      '*
                                       (type-to-external-form typeB)
-                                      ">"
+                                      '>
                                       ))
 
                        ;; Lists
                        (list-type (ltype)
-                                  (string-append
-                                      "list" "("
-                                      (type-to-external-form ltype)
-                                      ")"
+                                  (list
+                                      'list (list
+                                                (type-to-external-form ltype)
+                                                )
                                       ))
 
                        ;; Trees
                        (tree-type (tType)
-                                  (string-append
-                                      "tree" "("
-                                      (type-to-external-form tType)
-                                      ")"
+                                  (list
+                                      'tree (list
+                                                (type-to-external-form tType)
+                                                )
                                       ))
-
                        )
                 ))
 

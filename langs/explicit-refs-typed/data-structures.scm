@@ -26,9 +26,32 @@
                              (snd expval?))
                          ;; Lists
                          (list-val (l list?))
+                         ;; Trees
+                         (emptytree-val)
+                         (tree-val (val expval?)
+                                   (left expval?)
+                                   (right expval?))
                          )
 
                              ;;; extractors:
+
+        (define expval->node-val
+            (lambda (v)
+                (cases expval v
+                       (tree-val (val left right) val)
+                       (else (expval-extractor-error 'rst v)))))
+
+        (define expval->rst
+            (lambda (v)
+                (cases expval v
+                       (tree-val (val left right) right)
+                       (else (expval-extractor-error 'rst v)))))
+
+        (define expval->lst
+            (lambda (v)
+                (cases expval v
+                       (tree-val (val left right) left)
+                       (else (expval-extractor-error 'lst v)))))
 
         (define expval->list
             (lambda (v)
