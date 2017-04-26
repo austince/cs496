@@ -162,10 +162,12 @@
 
                        ;; REFERENCES
 
+                       ;; exp::t -> ref(t)
                        (newref-exp (e)
                                    (let ((eType (type-of e tenv)))
                                        (ref-type eType)))
 
+                       ;; exp::ref(t) -> t
                        (deref-exp (e)
                                   (let ((eType (type-of e tenv)))
                                       (cases type eType
@@ -177,6 +179,7 @@
                                                        e
                                                        )))))
 
+                       ;; exp::ref(t) * exp::t -> unit
                        (setref-exp (le re)
                                    (let ((leType (type-of le tenv))
                                          (reType (type-of re tenv)))
@@ -195,11 +198,13 @@
 
                        ;; Pairs
 
+                       ;; exp::t1 * exp::t2 -> pair(<t1 * t2>)
                        (pair-exp (le re)
                                  (let ((leType (type-of le tenv))
                                        (reType (type-of re tenv)))
                                      (pair-type leType reType)))
 
+                       ;;; id * id * exp::pair(<t1 * t2>) * exp:t3 -> t3
                        (unpair-exp (id1 id2 exp body)
                                    (let* ((expType (type-of exp tenv))
                                           (fstType (pair-type->fst expType))
@@ -211,8 +216,10 @@
                                        ))
 
                        ;; Lists
+                       ;; t -> list(t)
                        (emptylist-exp (t) (list-type t))
 
+                       ;; exp::t * exp::list(t) -> list(t)
                        (cons-exp (exp1 exp2)
                                  (let* ((e1Type (type-of exp1 tenv))
                                        (e2Type (type-of exp2 tenv))
@@ -223,6 +230,7 @@
                                      ;; The result will be of the second expressions type
                                      e2Type))
 
+                       ;; exp::list(t) -> bool
                        (null?-exp (exp1)
                                   (let* ((e1Type (type-of exp1 tenv))
                                          (lType (list-type->type e1Type)))
@@ -230,23 +238,27 @@
                                       (bool-type)
                                       ))
 
+                       ;; exp::list(t) -> t
                        (car-exp (exp1)
                                 (let* ((e1Type (type-of exp1 tenv))
                                        (lType (list-type->type e1Type)))
                                     lType
                                     ))
 
+                       ;; exp::list(t) -> list(t)
                        (cdr-exp (exp1)
                                 (let* ((e1Type (type-of exp1 tenv))
+                                       ;; Make sure it's a list
                                       (lType (list-type->type e1Type))
                                      )
+                                    ;; Result is same type as given
                                     e1Type))
 
                        ;; TREES
                        ;; t -> tree(t)
                        (emptytree-exp (t) (tree-type t))
 
-                       ;; exp(t) * exp(tree(t)) * exp(tree(t)) -> tree(t)
+                       ;; exp::t * exp::tree(t) * exp::tree(t) -> tree(t)
                        (node-exp (valexp lstexp rstexp)
                                  (let* ((valType (type-of valexp tenv))
                                        (lstTree (type-of lstexp tenv))
@@ -259,7 +271,7 @@
                                      ;; The result will be a tree of the valexp type
                                      (tree-type valType)))
 
-                       ;; tree(t) -> bool
+                       ;; exp::tree(t) -> bool
                        (nullT?-exp (exp)
                                    (let* ((expType (type-of exp tenv))
                                           (tType (tree-type->type expType))
@@ -268,7 +280,7 @@
                                        (bool-type)
                                        ))
 
-                       ;; tree(t) -> t
+                       ;; exp::tree(t) -> t
                        (getData-exp (exp)
                                     (let* ((expType (type-of exp tenv))
                                            (tType (tree-type->type expType)))
@@ -276,7 +288,7 @@
                                         tType
                                         ))
 
-                       ;; tree(t) -> tree(t)
+                       ;; exp::tree(t) -> tree(t)
                        (getLST-exp (exp)
                                    (let* ((expType (type-of exp tenv))
                                           (tType (tree-type->type expType)))
@@ -285,7 +297,7 @@
                                        ))
 
                        ;; Same as getLST
-                       ;; tree(t) -> tree(t)
+                       ;; exp::tree(t) -> tree(t)
                        (getRST-exp (exp)
                                    (let* ((expType (type-of exp tenv))
                                           (tType (tree-type->type expType)))
