@@ -24,6 +24,51 @@
 
         ;;;;;;;;;;;;;;;; The Type Checker ;;;;;;;;;;;;;;;;
 
+
+        ;; Extractors
+
+        ;; Trees
+        (define tree-type->type
+            (lambda (tree)
+                (cases type tree
+                       (tree-type (t) t)
+                       (else (eopl:error 'tree-type->type
+                                         "Not a tree type: ~s" (type-to-external-form tree)))
+                       )))
+
+        ;; Pairs
+
+        (define pair-type->fst
+            (lambda (pair)
+                (cases type pair
+                       (pair-type (fstType sndType) fstType)
+                       (else (eopl:error 'pair-type->fst
+                                         "Not a pair type: ~s" (type-to-external-form pair)))
+                       )))
+
+        (define pair-type->snd
+            (lambda (pair)
+                (cases type pair
+                       (pair-type (fstType sndType) sndType)
+                       (else (eopl:error 'pair-type->snd
+                                         "Not a pair type: ~s" (type-to-external-form pair)))
+                       )))
+
+        ;; Lists
+        (define list-type->type
+            (lambda (lt)
+                (cases type lt
+                       ;; Make sure it's a list
+                       (list-type (lType)
+                                  ;; If it is, great!
+                                  lType)
+                       (else (eopl:error
+                                 'null?
+                                 "Not a list type: ~s"
+                                 (type-to-external-form lt)
+                                 )))
+                ))
+
         ;; type-of-program : Program -> Type
         ;; Page: 244
         (define type-of-program
@@ -153,178 +198,99 @@
                        (pair-exp (le re)
                                  (let ((leType (type-of le tenv))
                                        (reType (type-of re tenv)))
-
                                      (pair-type leType reType)))
 
                        (unpair-exp (id1 id2 exp body)
-                                   (let ((expType (type-of exp tenv)))
-                                       (cases type expType
-                                              (pair-type (fstType sndType)
-                                                         (type-of body
-                                                                  ;; Extend env with both vars
-                                                                  (extend-tenv id1 fstType
-                                                                               (extend-tenv id2 sndType tenv)))
-                                                         )
-                                              (else (eopl:error
-                                                        'unpair
-                                                        "Not a pair type: ~s in ~a"
-                                                        (type-to-external-form expType)
-                                                        exp
-                                                        )))
+                                   (let* ((expType (type-of exp tenv))
+                                          (fstType (pair-type->fst expType))
+                                          (sndType (pair-type->snd expType))
+                                         )
+                                       ;; Extend env with both vars
+                                       (type-of body (extend-tenv id1 fstType
+                                                                   (extend-tenv id2 sndType tenv)))
                                        ))
 
                        ;; Lists
                        (emptylist-exp (t) (list-type t))
 
                        (cons-exp (exp1 exp2)
-                                 (let ((e1Type (type-of exp1 tenv))
-                                       (e2Type (type-of exp2 tenv)))
+                                 (let* ((e1Type (type-of exp1 tenv))
+                                       (e2Type (type-of exp2 tenv))
+                                       (lType (list-type->type e2Type))
+                                      )
+                                     (check-equal-type! lType e1Type exp1)
                                      ;; Make sure the second arg is a list
-                                     (cases type e2Type
-                                            ;; Make sure the first arg is of the list's type
-                                            (list-type (lType)
-                                                       (check-equal-type! lType e1Type exp1))
-                                            (else (eopl:error
-                                                      'cons
-                                                      "Not a list type: ~s in ~a"
-                                                      (type-to-external-form e2Type)
-                                                      exp2
-                                                      )))
                                      ;; The result will be of the second expressions type
                                      e2Type))
 
                        (null?-exp (exp1)
-                                  (let ((e1Type (type-of exp1 tenv)))
-                                      (cases type e1Type
-                                             ;; Make sure it's a list
-                                             (list-type (lType)
-                                                        ;; If it is, great!
-                                                        (bool-type))
-                                             (else (eopl:error
-                                                       'null?
-                                                       "Not a list type: ~s in ~a"
-                                                       (type-to-external-form e1Type)
-                                                       exp1
-                                                       )))))
+                                  (let* ((e1Type (type-of exp1 tenv))
+                                         (lType (list-type->type e1Type)))
+                                      ;; If it's a list, great!
+                                      (bool-type)
+                                      ))
 
                        (car-exp (exp1)
-                                (let ((e1Type (type-of exp1 tenv)))
-                                    (cases type e1Type
-                                           ;; Make sure it's a list
-                                           (list-type (lType)
-                                                      ;; If it is, great, return its type!
-                                                      lType)
-                                           (else (eopl:error
-                                                     'null?
-                                                     "Not a list type: ~s in ~a"
-                                                     (type-to-external-form e1Type)
-                                                     exp1
-                                                     )))))
+                                (let* ((e1Type (type-of exp1 tenv))
+                                       (lType (list-type->type e1Type)))
+                                    lType
+                                    ))
 
                        (cdr-exp (exp1)
-                                (let ((e1Type (type-of exp1 tenv)))
-                                    (cases type e1Type
-                                           ;; Make sure it's a list
-                                           (list-type (lType)
-                                                      ;; If it is, great, return the list-type!
-                                                      e1Type)
-                                           (else (eopl:error
-                                                     'null?
-                                                     "Not a list type: ~s in ~a"
-                                                     (type-to-external-form e1Type)
-                                                     exp1
-                                                     )))))
-
+                                (let* ((e1Type (type-of exp1 tenv))
+                                      (lType (list-type->type e1Type))
+                                     )
+                                    e1Type))
 
                        ;; TREES
+                       ;; t -> tree(t)
                        (emptytree-exp (t) (tree-type t))
 
-
-                       ;; Can probably be done better. Can definitely be done better.
+                       ;; exp(t) * exp(tree(t)) * exp(tree(t)) -> tree(t)
                        (node-exp (valexp lstexp rstexp)
-                                 (let ((valType (type-of valexp tenv))
+                                 (let* ((valType (type-of valexp tenv))
                                        (lstTree (type-of lstexp tenv))
                                        (rstTree (type-of rstexp tenv))
+                                       (rType (tree-type->type rstTree))
+                                        (lType (tree-type->type lstTree))
                                       )
-                                     ;; Make sure both subtrees are of the same type as val
-                                     (cases type lstTree
-                                            ;; Make sure the first arg is of the list's type
-                                            (tree-type (lType)
-                                                       (check-equal-type! lType valType lstexp)
-                                                       (cases type rstTree
-                                                              (tree-type (rType)
-                                                                         (check-equal-type! rType valType rstexp))
-                                                              (else (eopl:error
-                                                                        'node
-                                                                        "Not a tree type: ~s in ~a"
-                                                                        (type-to-external-form rstTree)
-                                                                        rstexp
-                                                                        )))
-                                                       )
-                                            (else (eopl:error
-                                                      'node
-                                                      "Not a tree type: ~s in ~a"
-                                                      (type-to-external-form lstTree)
-                                                      lstexp
-                                                      )))
-                                     ;; The result will be of the second expressions type
-                                     valType))
+                                     (check-equal-type! lType valType lstexp)
+                                     (check-equal-type! rType valType rstexp)
+                                     ;; The result will be a tree of the valexp type
+                                     (tree-type valType)))
 
                        ;; tree(t) -> bool
                        (nullT?-exp (exp)
-                                   (let ((expType (type-of exp tenv)))
-                                       (cases type expType
-                                              ;; if it's a tree, return bool, doi
-                                              (tree-type (tType) (bool-type))
-                                              (else (eopl:error
-                                                        'nullT?
-                                                        "Not a tree type: ~s in ~a"
-                                                        (type-to-external-form expType)
-                                                        exp
-                                                        )))
+                                   (let* ((expType (type-of exp tenv))
+                                          (tType (tree-type->type expType))
+                                         )
+                                       ;; if it's a tree, return bool, doi
+                                       (bool-type)
                                        ))
 
                        ;; tree(t) -> t
                        (getData-exp (exp)
-                                    (let ((expType (type-of exp tenv)))
-                                        (cases type expType
-                                               ;; if it's a tree, return the tree's type
-                                               (tree-type (tType) tType)
-                                               (else (eopl:error
-                                                         'getData
-                                                         "Not a tree type: ~s in ~a"
-                                                         (type-to-external-form expType)
-                                                         exp
-                                                         )))
+                                    (let* ((expType (type-of exp tenv))
+                                           (tType (tree-type->type expType)))
+                                        ;; if it's a tree, return the tree's type
+                                        tType
                                         ))
 
                        ;; tree(t) -> tree(t)
                        (getLST-exp (exp)
-                                   (let ((expType (type-of exp tenv)))
-                                       (cases type expType
-                                              ;; if it's a tree, return it's type
-                                              (tree-type (tType) expType)
-                                              (else (eopl:error
-                                                        'getLST
-                                                        "Not a tree type: ~s in ~a"
-                                                        (type-to-external-form expType)
-                                                        exp
-                                                        )))
+                                   (let* ((expType (type-of exp tenv))
+                                          (tType (tree-type->type expType)))
+                                       ;; if it's a tree, return the tree
+                                       expType
                                        ))
 
                        ;; Same as getLST
                        ;; tree(t) -> tree(t)
                        (getRST-exp (exp)
-                                   (let ((expType (type-of exp tenv)))
-                                       (cases type expType
-                                              ;; if it's a tree, return it's type
-                                              (tree-type (tType) expType)
-                                              (else (eopl:error
-                                                        'getRST
-                                                        "Not a tree type: ~s in ~a"
-                                                        (type-to-external-form expType)
-                                                        exp
-                                                        )))
+                                   (let* ((expType (type-of exp tenv))
+                                          (tType (tree-type->type expType)))
+                                       ;; if it's a tree, return the tree
+                                       expType
                                        ))
                        )))
 

@@ -3,12 +3,12 @@ Append
 ```scheme
 (run "
 let append = proc(dest:list(int)) proc(src:list(int))
-letrec list(int) appInner(srcInner:list(int)) = 
+letrec list(int) appendInner(srcInner:list(int)) = 
 if null?(srcInner)
 then dest
-else cons(car(srcInner), (appInner cdr(srcInner)) )
+else cons(car(srcInner), (appendInner cdr(srcInner)) )
 in
-(appInner src)
+(appendInner src)
 in ((append cons(3, emptylist int)) cons(4, emptylist int))")
 ```
 
